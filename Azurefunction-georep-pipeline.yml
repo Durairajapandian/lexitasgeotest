@@ -1,50 +1,51 @@
 trigger:
   branches:
     include:
-      - main
+      - main  # or your working branch
+
+pool:
+  vmImage: 'ubuntu-latest'
 
 variables:
-  ACR_NAME: lexitasgeotest-gecubragfndnhvgk
-  ACR_LOGIN_SERVER: lexitasgeotest-gecubragfndnhvgk.azurecr.io
-  IMAGE_NAME: ros-dlq-alert
-  FUNCTION_APP_NAME: ros-dlq-func
-  RESOURCE_GROUP: Internal-POC
+  imageName: ros-dlq-alert
+  acrLoginServer: lexitasgeotest-gecubragfndnhvgk.azurecr.io
+  functionAppName: lexitas-geo-test
+  resourceGroupName: Internal-POC
+  dockerfilePath: Dockerfile
 
 stages:
-- stage: BuildAndDeploy
-  displayName: Build and Deploy to Azure Function
-  jobs:
-  - job: BuildPushDeploy
-    displayName: Build, Push Docker, Deploy to Function
-    pool:
-      vmImage: ubuntu-latest
+  - stage: BuildPushDeploy
+    jobs:
+      - job: BuildPushDeploy
+        steps:
+          - task: AzureCLI@2
+            inputs:
+              azureSubscription: ''  # not used
+              scriptType: bash
+              scriptLocation: inlineScript
+              inlineScript: |
+                echo "Logging in to Azure..."
+                az login --service-principal \
+                  --username ${{ secrets.AZURE_CLIENT_ID }} \
+                  --password ${{ secrets.AZURE_CLIENT_SECRET }} \
+                  --tenant ${{ secrets.AZURE_TENANT_ID }}
 
-    steps:
-    - checkout: self
+                echo "Logging in to ACR..."
+                az acr login --name ${{ variables.acrLoginServer }}
 
-    - task: AzureCLI@2
-      name: BuildPushDeploy
-      inputs:
-        azureSubscription: '<your-service-connection-name>'
-        scriptType: bash
-        scriptLocation: inlineScript
-        inlineScript: |
-          echo "Logging into ACR..."
-          az acr login --name $ACR_NAME
+                echo "Building Docker image..."
+                docker build -t ${{ variables.acrLoginServer }}/${{ variables.imageName }}:latest .
 
-          echo "Building Docker image..."
-          docker build -t $ACR_LOGIN_SERVER/$IMAGE_NAME:latest .
+                echo "Pushing Docker image to ACR..."
+                docker push ${{ variables.acrLoginServer }}/${{ variables.imageName }}:latest
 
-          echo "Pushing Docker image..."
-          docker push $ACR_LOGIN_SERVER/$IMAGE_NAME:latest
+                echo "Deploying to Azure Function App..."
+                az functionapp config container set \
+                  --name ${{ variables.functionAppName }} \
+                  --resource-group ${{ variables.resourceGroupName }} \
+                  --docker-custom-image-name ${{ variables.acrLoginServer }}/${{ variables.imageName }}:latest
 
-          echo "Deploying to Azure Function App..."
-          az functionapp config container set \
-            --name $FUNCTION_APP_NAME \
-            --resource-group $RESOURCE_GROUP \
-            --docker-custom-image-name $ACR_LOGIN_SERVER/$IMAGE_NAME:latest
-
-          echo "Restarting Function App..."
-          az functionapp restart \
-            --name $FUNCTION_APP_NAME \
-            --resource-group $RESOURCE_GROUP
+                echo "Restarting Function App..."
+                az functionapp restart \
+                  --name ${{ variables.functionAppName }} \
+                  --resource-group ${{ variables.resourceGroupName }}
