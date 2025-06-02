@@ -1,0 +1,50 @@
+trigger:
+  branches:
+    include:
+      - main
+
+variables:
+  ACR_NAME: lexitasgeotest-gecubragfndnhvgk
+  ACR_LOGIN_SERVER: lexitasgeotest-gecubragfndnhvgk.azurecr.io
+  IMAGE_NAME: ros-dlq-alert
+  FUNCTION_APP_NAME: ros-dlq-func
+  RESOURCE_GROUP: Internal-POC
+
+stages:
+- stage: BuildAndDeploy
+  displayName: Build and Deploy to Azure Function
+  jobs:
+  - job: BuildPushDeploy
+    displayName: Build, Push Docker, Deploy to Function
+    pool:
+      vmImage: ubuntu-latest
+
+    steps:
+    - checkout: self
+
+    - task: AzureCLI@2
+      name: BuildPushDeploy
+      inputs:
+        azureSubscription: '<your-service-connection-name>'
+        scriptType: bash
+        scriptLocation: inlineScript
+        inlineScript: |
+          echo "Logging into ACR..."
+          az acr login --name $ACR_NAME
+
+          echo "Building Docker image..."
+          docker build -t $ACR_LOGIN_SERVER/$IMAGE_NAME:latest .
+
+          echo "Pushing Docker image..."
+          docker push $ACR_LOGIN_SERVER/$IMAGE_NAME:latest
+
+          echo "Deploying to Azure Function App..."
+          az functionapp config container set \
+            --name $FUNCTION_APP_NAME \
+            --resource-group $RESOURCE_GROUP \
+            --docker-custom-image-name $ACR_LOGIN_SERVER/$IMAGE_NAME:latest
+
+          echo "Restarting Function App..."
+          az functionapp restart \
+            --name $FUNCTION_APP_NAME \
+            --resource-group $RESOURCE_GROUP
