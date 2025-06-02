@@ -4,7 +4,7 @@ trigger:
       - main  # or your working branch
 
 pool:
-  vmImage: 'ubuntu-latest'
+  vmImage: 'Default'
 
 variables:
   - group: AzureServicePrincipal
