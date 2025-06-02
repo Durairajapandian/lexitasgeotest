@@ -24,28 +24,28 @@ stages:
               scriptType: bash
               scriptLocation: inlineScript
               inlineScript: |
-                echo "🔐 Logging in to Azure..."
+                echo " Logging in to Azure..."
                 az login --service-principal \
                   --username "$AZURE_CLIENT_ID" \
                   --password "$AZURE_CLIENT_SECRET" \
                   --tenant "$AZURE_TENANT_ID"
 
-                echo "🔓 Logging in to ACR..."
+                echo "Logging in to ACR..."
                 az acr login --name "$acrLoginServer"
 
-                echo "🐳 Building Docker image..."
+                echo " Building Docker image..."
                 docker build -t "$acrLoginServer/$imageName:latest" .
 
-                echo "📦 Pushing Docker image to ACR..."
+                echo " Pushing Docker image to ACR..."
                 docker push "$acrLoginServer/$imageName:latest"
 
-                echo "🚀 Deploying to Azure Function App..."
+                echo " Deploying to Azure Function App..."
                 az functionapp config container set \
                   --name "$functionAppName" \
                   --resource-group "$resourceGroupName" \
                   --docker-custom-image-name "$acrLoginServer/$imageName:latest"
 
-                echo "🔁 Restarting Function App..."
+                echo "Restarting Function App..."
                 az functionapp restart \
                   --name "$functionAppName" \
                   --resource-group "$resourceGroupName"
