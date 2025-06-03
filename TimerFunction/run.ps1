@@ -11,3 +11,6 @@ if ($Timer.IsPastDue) {
 
 # Write an information log with the current time.
 Write-Host "PowerShell timer trigger function ran! TIME: $currentUTCtime"
+
+# Import and run your actual logic script
+. "$PSScriptRoot/../ROS-Dev-RG-DLQ-Alert.ps1"
