@@ -4,7 +4,7 @@ trigger:
       - main  # or your working branch
 
 pool:
-  vmImage: 'Azure Pipelines'
+  name: Default
 
 variables:
   - group: AzureServicePrincipal
