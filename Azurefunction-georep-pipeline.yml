@@ -13,7 +13,7 @@ variables:
     value: lexitasgeotest-gecubragfndnhvgk.azurecr.io
 
   - name: functionAppName
-    value: lexitas-geo-test
+    value: lexitasgeoreplication
 
   - name: imageName
     value: ros-dlq-alert
