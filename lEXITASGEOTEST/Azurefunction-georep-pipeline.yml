@@ -38,8 +38,8 @@ stages:
                 echo "Logging in to ACR..."
                 az acr login --name "$(az acr list --query "[?loginServer=='${acrLoginServer}'].name" -o tsv)"
 
-                echo "Building Docker image..."
-                docker build -t "$acrLoginServer/$imageName:latest" .
+                echo "Building Docker image from lEXITASGEOTEST..."
+                docker build -t "$acrLoginServer/$imageName:latest" -f lEXITASGEOTEST/Dockerfile lEXITASGEOTEST/
 
                 echo "Pushing Docker image to ACR..."
                 docker push "$acrLoginServer/$imageName:latest"
