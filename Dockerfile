@@ -1,14 +1,9 @@
-# Use Microsoft’s official PowerShell image
-FROM mcr.microsoft.com/powershell:latest
+# Use the official Azure Functions PowerShell runtime image
+FROM mcr.microsoft.com/azure-functions/powershell:4
 
-# Set working directory inside the container
-WORKDIR /app
+# Set environment variables expected by the Azure Functions host
+ENV AzureWebJobsScriptRoot=/home/site/wwwroot \
+    AzureFunctionsJobHost__Logging__Console__IsEnabled=true
 
-# Copy the PowerShell script into the image
-COPY ROS-Dev-RG-DLQ-Alert.ps1 .
-
-# Optional: give execution permissions (not strictly required for PowerShell)
-RUN chmod +x ROS-Dev-RG-DLQ-Alert.ps1
-
-# Default command to run the script
-CMD ["pwsh", "./ROS-Dev-RG-DLQ-Alert.ps1"]
+# Copy all function code into the container
+COPY . /home/site/wwwroot
