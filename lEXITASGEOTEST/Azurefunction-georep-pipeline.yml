@@ -36,9 +36,10 @@ stages:
               scriptLocation: inlineScript
               inlineScript: |
                 echo "Logging in to ACR..."
-                az acr login --name "$(az acr list --query "[?loginServer=='${acrLoginServer}'].name" -o tsv)"
+                acrName=${acrLoginServer%%.*}
+                az acr login --name "$acrName"
 
-                echo "Building Docker image from lEXITASGEOTEST..."
+                echo "Building Docker image from lEXITASGEOTEST directory..."
                 docker build -t "$acrLoginServer/$imageName:latest" -f lEXITASGEOTEST/Dockerfile lEXITASGEOTEST/
 
                 echo "Pushing Docker image to ACR..."
