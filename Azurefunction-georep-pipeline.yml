@@ -12,19 +12,22 @@ variables:
   - name: acrLoginServer
     value: lexitasgeotest-gecubragfndnhvgk.azurecr.io
 
-  - name: functionAppName
-    value: lexitasgeoreplication
-
   - name: imageName
     value: ros-dlq-alert
 
   - name: resourceGroupName
     value: Internal-POC
 
+  - name: functionAppEast
+    value: lexitasgeoreplication
+
+  - name: functionAppCentral
+    value: lexitasgeoreplication-1
+
 stages:
-  - stage: BuildPushDeploy
+  - stage: BuildPush
     jobs:
-      - job: BuildPushDeploy
+      - job: BuildPush
         steps:
           - task: AzureCLI@2
             inputs:
@@ -40,19 +43,57 @@ stages:
 
                 echo "Pushing Docker image to ACR..."
                 docker push "$acrLoginServer/$imageName:latest"
+            env:
+              acrLoginServer: $(acrLoginServer)
+              imageName: $(imageName)
 
-                echo "Deploying to Azure Function App..."
+  - stage: Deploy
+    dependsOn: BuildPush
+    jobs:
+      - job: DeployEast
+        displayName: Deploy to East US
+        steps:
+          - task: AzureCLI@2
+            inputs:
+              azureSubscription: 'AzureRM-Geo'
+              scriptType: bash
+              scriptLocation: inlineScript
+              inlineScript: |
+                echo "Deploying to Function App in East US..."
                 az functionapp config container set \
-                  --name "$functionAppName" \
+                  --name "$functionAppEast" \
                   --resource-group "$resourceGroupName" \
                   --docker-custom-image-name "$acrLoginServer/$imageName:latest"
 
-                echo "Restarting Function App..."
                 az functionapp restart \
-                  --name "$functionAppName" \
+                  --name "$functionAppEast" \
                   --resource-group "$resourceGroupName"
             env:
               acrLoginServer: $(acrLoginServer)
               imageName: $(imageName)
-              functionAppName: $(functionAppName)
+              functionAppEast: $(functionAppEast)
+              resourceGroupName: $(resourceGroupName)
+
+      - job: DeployCentral
+        displayName: Deploy to Central US
+        steps:
+          - task: AzureCLI@2
+            inputs:
+              azureSubscription: 'AzureRM-Geo'
+              scriptType: bash
+              scriptLocation: inlineScript
+              inlineScript: |
+                echo "Deploying to Function App in Central US..."
+                az functionapp config container set \
+                  --name "$functionAppCentral" \
+                  --resource-group "$resourceGroupName" \
+                  --docker-custom-image-name "$acrLoginServer/$imageName:latest"
+
+                az functionapp restart \
+                  --name "$functionAppCentral" \
+                  --resource-group "$resourceGroupName"
+            env:
+              acrLoginServer: $(acrLoginServer)
+              imageName: $(imageName)
+              functionAppCentral: $(functionAppCentral)
               resourceGroupName: $(resourceGroupName)
